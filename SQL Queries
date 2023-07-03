@@ -1,0 +1,121 @@
+Here are the SQL queries necessary for this analysis and presentation.
+
+# BACKGROUND INFORMATION
+
+## Descriptive Statistics of Rockbuster dataset
+SELECT MIN(rental_duration) AS minimum_rental_duration,	
+	   MAX(rental_duration) AS maximum_rental_duration,
+	   AVG(rental_duration) AS average_rental_duration,
+	   MIN(rental_rate) AS minimum_rental_rate,
+	   MAX(rental_rate) AS maximum_rental_rate,
+	   AVG(rental_rate) AS average_rental_rate,
+	   MIN(length) AS minimum_length,
+	   MAX(length) AS maximum_length,
+	   AVG(length) AS average_length,
+	   COUNT(*) AS count_movies,
+	   MODE() WITHIN GROUP (ORDER BY rating)
+	       AS mode_rating
+FROM film	
+
+## Count of movies by rating
+SELECT rating, COUNT(film_id) AS count_of_movies
+FROM film
+GROUP BY rating
+
+# MOVIES BY REVENUE
+
+## Create a table for revenue by movie information
+SELECT A.title AS movie, SUM(D.amount) AS revenue
+FROM film A
+JOIN inventory B ON A.film_id = B.film_id
+JOIN rental C ON B.inventory_id = C.inventory_id
+JOIN payment D ON C.rental_id = D.rental_id
+GROUP BY movie
+ORDER BY revenue DESC
+
+## Top 10 Movies by revenue
+SELECT A.title AS movie, SUM(D.amount) AS revenue
+FROM film A
+JOIN inventory B ON A.film_id = B.film_id
+JOIN rental C ON B.inventory_id = C.inventory_id
+JOIN payment D ON C.rental_id = D.rental_id
+GROUP BY movie
+ORDER BY revenue DESC
+LIMIT 10
+
+## Add genres to Top 10 table
+SELECT A.title AS movie, C.name AS genre
+FROM film A
+JOIN film_category B ON A.film_id = B.film_id
+JOIN category C ON B.category_id = C.category_id
+WHERE A.title IN ('Telegraph Voyage', 'Zorro Ark', 'Wife Turn', 'Innocent Usual', 'Hustler Party', 'Saturday Lambs', 'Titans Jerk', 'Harry Idaho', 'Torque Bound', 'Dogma Family');
+
+## Lowest 10 Movies by Revenue
+SELECT A.title AS movie, SUM(D.amount) AS revenue
+FROM film A
+JOIN inventory B ON A.film_id = B.film_id
+JOIN rental C ON B.inventory_id = C.inventory_id
+JOIN payment D ON C.rental_id = D.rental_id
+GROUP BY movie
+ORDER BY revenue ASC
+LIMIT 10
+
+## Add genres to Lowest 10 table
+SELECT A.title AS movie, C.name AS genre
+FROM film A
+JOIN film_category B ON A.film_id = B.film_id
+JOIN category C ON B.category_id = C.category_id
+WHERE A.title IN ('Texas Watch', 'Oklahoma Jumanji', 'Duffel Apocalypse', 'Freedom Cleopatra', 'Young Language', 'Rebel Airport', 'Cruelty Unforgiven', 'Treatment Jekyll', 'Lights Deer', 'Stallion Sundance');
+
+# RENTAL DURATION
+
+## What was the average rental duration for all videos?
+SELECT AVG((CAST(return_date AS DATE) - CAST(rental_date AS DATE))+1) AS average_rental_duration_day
+FROM rental 
+
+## Average rental duration by genre
+SELECT name AS genre, AVG((CAST(return_date AS DATE) - CAST(rental_date AS DATE))+1) AS average_rental_duration_day
+FROM rental A 
+JOIN inventory B ON A.inventory_id = B.inventory_id
+JOIN film_category C ON B. film_id = C.film_id
+JOIN category D ON C.category_id = D.category_id
+GROUP BY genre
+ORDER BY 2 DESC
+
+# MOST CUSTOMERS BY COUNTRY
+
+## Which countries have the most customers?
+SELECT country, COUNT(DISTINCT customer_id) AS number_of_customer
+FROM customer A
+JOIN address B ON A.address_id = B.address_id
+JOIN city C ON B.city_id = C.city_id
+JOIN country D ON C.country_id = D.country_id
+GROUP BY country
+ORDER BY number_of_customer DESC
+
+# LIFETIME VALUE CUSTOMERS
+
+## Which countries have the most lifetime value customers?
+SELECT country, city, first_name, last_name, COUNT(rental_id) AS number_rental, SUM(amount) AS revenue
+FROM customer A
+JOIN address B ON A.address_id = B.address_id
+JOIN city C ON B.city_id = C.city_id
+JOIN country D ON C.country_id = D.country_id
+JOIN payment E ON A.customer_id = E.customer_id
+GROUP BY country, city, first_name, last_name
+ORDER BY revenue DESC
+
+# SALES
+
+## Do sales figures vary between geographic regions?
+SELECT country, 
+COUNT(DISTINCT A.customer_id) AS number_of_customer,
+SUM(amount) AS revenue,  
+SUM(amount)/COUNT(DISTINCT A.customer_id) AS average_check
+FROM customer A
+JOIN address B ON A.address_id = B.address_id
+JOIN city C ON B.city_id = C.city_id 
+JOIN country D ON C.country_id = D.country_id
+JOIN payment E on A.customer_id = E.customer_id
+GROUP BY country
+ORDER BY 3 DESC
